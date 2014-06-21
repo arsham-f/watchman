@@ -24,12 +24,19 @@ r = redis.StrictRedis(host='arsh.am', port=6379, db=0, password=pwd)
 #Get to work
 def Capture():
 	name = `round(time.time())` + ".jpg"
+
+	print "capture"
 	c.capture(name)
+
+	print "upload"
 	f = open(name, "rb")
 	client.put_file(name, f)
 	os.remove(name)
-	print r.rpush('captures', name)
+
+	print "redis"
+	r.rpush('captures', name)
 
 while True:
-	Capture()
-	time.sleep(3)
+	if r.llen('captures') < 10:
+		Capture()
+	time.sleep(1)
