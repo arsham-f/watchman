@@ -16,7 +16,6 @@ func main() {
 
 	//Main loop
 	var diff float64
-
 	for {
 		diff = NextImageAndCompare()
 		fmt.Printf("Diff: %f\n", diff)

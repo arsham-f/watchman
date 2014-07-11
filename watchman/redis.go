@@ -5,14 +5,14 @@ import (
 	"os"
 )
 
-const (
-	queue = "captures"
-)
-
 var (
 	client *Client
+	queue  = "captures"
 )
 
+/*
+	Connect to redis and test connection
+*/
 func ConnectRedis() error {
 
 	client = New("tcp:162.243.93.174:6379", 0, os.Getenv("REDIS_PWD"))
