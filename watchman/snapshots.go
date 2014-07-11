@@ -1,21 +1,25 @@
 package main
 
 import (
-	"fmt"
 	. "gopkgs.com/magick.v1"
 )
 
 var (
-	imageA                = &Image{}
-	imageB                = &Image{}
-	NullImage             = Image{}
-	images    chan *Image = make(chan *Image, 2)
+	imageA    = &Image{}
+	imageB    = &Image{}
+	NullImage = Image{}
+	images    = make(chan *Snapshot, 2)
 )
+
+type Snapshot struct {
+	img  *Image
+	name string
+}
 
 /*
 	Blocks until there is an image available
 */
-func NextImage() *Image {
+func NextSnapshot() *Snapshot {
 	return <-images
 }
 
@@ -33,13 +37,13 @@ func DownloadImages() {
 			continue
 		}
 
+		go AddToQueue(nextFile, data)
 		go Del(nextFile)
-		go AddToQueue(data)
 
 	}
 }
 
-func AddToQueue(data []byte) {
+func AddToQueue(fname string, data []byte) {
 
 	image, err := DecodeData(data)
 
@@ -47,30 +51,34 @@ func AddToQueue(data []byte) {
 		return
 	}
 
-	images <- image
+	images <- &Snapshot{
+		img:  image,
+		name: fname,
+	}
 }
 
 /*
 	Rotate images calculate mean difference
 */
-func NextImageAndCompare() float64 {
+func NextImageAndCompare() (string, float64) {
 	var s Stopwatch
 
 	*imageA = *imageB
-	imageB = NextImage()
+
+	next := NextSnapshot()
+	imageB = next.img
 
 	if *imageA == NullImage || *imageB == NullImage {
-		return 0
+		return "", 0
 	}
 
 	s.Start()
-	diff, err := imageA.Compare(imageB)
+	diff, err := imageB.Compare(imageA)
 	s.Stop("Compare")
 
 	if HandleError(err, "Comparing two images") {
-		return 0
+		return "", 0
 	}
 
-	fmt.Printf("%#v", diff)
-	return diff.MeanPerPixel
+	return next.name, diff.MeanPerPixel
 }
